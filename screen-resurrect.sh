@@ -9,17 +9,20 @@ usage() {
 
 #######################
 # Config Variables
+max_win=15
 max_backups=12
 ignore_sessions="hosts"
-backup_dir=~/.resurrect/screen_snapshot
+backup_dir=~/.screen-resurrect/snapshot
 
 #######################
-# Use prompt to get state of window.
+# Use info line to get state of window.
 get_state() {
-   prompt='^\<.*@.*:'
-   prompt_line=$(grep $(eval echo ${prompt}) ${window_full} | tail -n 1)
-   host=$(printf "${prompt_line}" | cut -d@ -f2 | cut -d: -f1)
-   working_dir=$(printf "${prompt_line}" | cut -d: -f2 | cut -d\> -f1)
+   info_pattern='^ScreenWindowDump=.*@.*:'
+   info_line=$(grep -a "$(eval echo ${info_pattern})" ${window_full} | tail -n 1)
+   info_line=$(printf "${info_line}" | cut -d= -f2)
+   user=$(printf "${info_line}" | cut -d@ -f1)
+   host=$(printf "${info_line}" | cut -d@ -f2 | cut -d: -f1)
+   working_dir=$(printf "${info_line}" | cut -d: -f2 | cut -d$ -f1)
 }
 
 #######################
@@ -80,12 +83,14 @@ if [ "${task}" = 'backup' ] ;then
     if [ ! -d ${backup_dir}/${session_dir} ] ;then
       mkdir -p ${backup_dir}/${session_dir}
     fi
-    for win in $(seq 0 30) ;do
+    for win in $(seq 0 $max_win) ;do
       window=${backup_dir}/${session_dir}/${win}
       screen -S ${session_dir} -p ${win} -X hardcopy -h ${window}
+      # put a dummy command to avoid executing remaining command in the window.
+      screen -S ${session_dir} -p ${win} -X stuff "helloworld\neval \"echo ScreenWindowDump=\`whoami\`@\`hostname\`:\`pwd\` >> ${window}\"\n"
       if [ ! -s ${window} ] ;then
         sleep 1
-        rm ${window}
+        rm -rf ${window}
       fi
     done
   done
@@ -106,20 +111,17 @@ elif [ "${task}" = 'restore' ] ;then
     for window in $(ls ${session_full}) ;do
       window_full=${session_full}/${window}
       get_state
-      echo "${session}:${window}:${host}:${working_dir}"
+      echo "${session}:${window}:${user}@${host}:${working_dir}"
       if [ ${window} -ne 0 ] ;then
         screen -S ${session} -p \- -X screen
         screen -S ${session} -p ${i} -X number ${window}
       fi
-     screen -S ${session} -p ${window} -X stuff "cat ${window_full}
-"
+      screen -S ${session} -p ${window} -X stuff "cat ${window_full}\n"
       if [ "${host}" != "$(hostname)" ] ;then
-       screen -S ${session} -p ${window} -X stuff "ssh ${host}
-"
+        screen -S ${session} -p ${window} -X stuff "ssh ${host}\n"
         sleep 2
       fi
-     screen -S ${session} -p ${window} -X stuff "cd ${working_dir}
-"
+      screen -S ${session} -p ${window} -X stuff "cd ${working_dir}\n"
       if [ ${window} -eq ${i} ] ;then
         i=$((${i}+1))
       fi
