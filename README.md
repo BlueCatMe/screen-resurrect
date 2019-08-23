@@ -2,7 +2,7 @@
 This work is based on script from [BrainScraps Wiki][1] and published under CC-BY-SA.
 
 # Features
-Briefly, this script just helps restore the static environment of screen sessions, but not continuous unfinishing jobs. As a result, this should be executed just before rebooting the machine.
+Briefly, this script just helps restore the static environment of screen sessions, but not continuous unfinishing jobs.
 
 * Snapshot all screen sessions
 * Restore saved screen sessions
@@ -25,8 +25,5 @@ ignore_sessions="hosts"
 # where to put session snapshot
 backup_dir=~/.screen-resurrect/snapshot
 ```
-
-# Limitation
-This script could only snapshot *STATIC* status, says there is no running process, because it needs to execute a command to retrieve screen window information.
 
 [1]: https://brainscraps.fandom.com/wiki/Resurrecting_GNU_Screen_Sessions_After_Reboot

@@ -85,9 +85,10 @@ if [ "${task}" = 'backup' ] ;then
     fi
     for win in $(seq 0 $max_win) ;do
       window=${backup_dir}/${session_dir}/${win}
-      screen -S ${session_dir} -p ${win} -X stuff $"\003\n"
+      screen -S ${session_dir} -p ${win} -X stuff $"\032\n\n"
       screen -S ${session_dir} -p ${win} -X hardcopy -h ${window}
       screen -S ${session_dir} -p ${win} -X stuff "eval \"echo ScreenWindowDump=\`whoami\`@\`hostname\`:\`pwd\` >> ${window}\"\n"
+      screen -S ${session_dir} -p ${win} -X stuff $"fg\n"
       if [ ! -s ${window} ] ;then
         sleep 1
         rm -rf ${window}
